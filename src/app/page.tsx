@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 // 더미 값: 실제 내용은 나중에 교체
 const profile = {
@@ -14,6 +17,25 @@ const links = [
 ];
 
 export default function Home() {
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetch("/api/clicks")
+      .then((res) => (res.ok ? res.json() : {}))
+      .then(setCounts)
+      .catch(() => {});
+  }, []);
+
+  const handleClick = (id: string) => {
+    setCounts((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+    fetch("/api/clicks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+      keepalive: true,
+    }).catch(() => {});
+  };
+
   return (
     <div className="flex flex-1 justify-center font-sans">
       <main className="flex w-full max-w-md flex-col items-center px-8 py-20 sm:py-24">
@@ -39,11 +61,15 @@ export default function Home() {
             <li key={link.title}>
               <a
                 href={link.url || undefined}
+                onClick={() => handleClick(link.title)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-14 w-full items-center justify-center rounded-2xl border border-white/70 bg-white/40 text-base font-medium text-stone-800 shadow-[0_8px_24px_-12px_rgba(180,100,50,0.35)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/60"
+                className="relative flex h-14 w-full items-center justify-center rounded-2xl border border-white/70 bg-white/40 text-base font-medium text-stone-800 shadow-[0_8px_24px_-12px_rgba(180,100,50,0.35)] backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white/60"
               >
                 {link.title}
+                <span className="absolute right-5 text-xs font-normal text-stone-500">
+                  {counts[link.title] ?? 0}회
+                </span>
               </a>
             </li>
           ))}
